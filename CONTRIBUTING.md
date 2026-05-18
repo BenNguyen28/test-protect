@@ -14,6 +14,24 @@ docs/[name]/short-description
 - 1 approval required before merge
 - No self-merge
 - Squash merge only
+
+## PR description template
+Every PR must include:
+
+```
+## What
+[1-2 sentences — what changed]
+
+## Why
+[1-2 sentences — why this change is needed]
+
+## How to test
+[exact command(s) to verify the change works]
+
+## Risk
+[low / medium / high — and what could break]
+```
+
 ## Commit scopes
 api-gateway     — API gateway service
 deployment-service — Deployment service
