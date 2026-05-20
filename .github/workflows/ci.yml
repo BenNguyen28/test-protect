@@ -1,0 +1,26 @@
+name: CI-Day24
+
+on: [push, pull_request]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "lint passed"
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "test passed"
+
+  build-image:
+    runs-on: ubuntu-latest
+    needs: [lint, test]
+    steps:
+      - run: echo "build passed"
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: [build-image]
+    steps:
+      - run: echo "deploy passed"
