@@ -11,7 +11,8 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - run: echo "test passed"
+    #   - run: echo "test passed"
+        - run: exit 1
 
   build-image:
     runs-on: ubuntu-latest
