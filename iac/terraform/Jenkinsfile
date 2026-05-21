@@ -1,0 +1,68 @@
+pipeline {
+    agent { label 'terraform' }
+
+    options {
+        timeout(time: 30, unit: 'MINUTES')
+        timestamps()
+    }
+
+    environment {
+        TF_DIR = 'iac/terraform'
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+                sh 'terraform version'
+                sh 'aws --version'
+            }
+        }
+
+        stage('Init') {
+            steps {
+                dir(env.TF_DIR) {
+                    sh 'terraform init -no-color'
+                }
+            }
+        }
+
+        stage('Plan') {
+            steps {
+                withCredentials([
+                    string(credentialsId: 'aws-access-key-id',     variable: 'AWS_ACCESS_KEY_ID'),
+                    string(credentialsId: 'aws-secret-access-key', variable: 'AWS_SECRET_ACCESS_KEY')
+                ]) {
+                    dir(env.TF_DIR) {
+                        sh 'terraform plan -no-color -out=tfplan'
+                    }
+                }
+            }
+        }
+
+        stage('Approval') {
+            steps {
+                input message: 'Review the plan above. Apply to AWS?', ok: 'Yes, apply'
+            }
+        }
+
+        stage('Apply') {
+            steps {
+                withCredentials([
+                    string(credentialsId: 'aws-access-key-id',     variable: 'AWS_ACCESS_KEY_ID'),
+                    string(credentialsId: 'aws-secret-access-key', variable: 'AWS_SECRET_ACCESS_KEY')
+                ]) {
+                    dir(env.TF_DIR) {
+                        sh 'terraform apply -auto-approve -no-color tfplan'
+                        sh 'terraform output'
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        success { echo "Pipeline succeeded — S3 bucket created" }
+        failure { echo "Pipeline failed — check the stage above" }
+    }
+}
