@@ -4,6 +4,7 @@ pipeline {
     options {
         timeout(time: 30, unit: 'MINUTES')
         timestamps()
+        ansiColor('xterm')
     }
 
     environment {
@@ -18,7 +19,6 @@ pipeline {
                 sh 'aws --version'
             }
         }
-
         stage('Init') {
             steps {
                 dir(env.TF_DIR) {
@@ -26,7 +26,6 @@ pipeline {
                 }
             }
         }
-
         stage('Plan') {
             steps {
                 withCredentials([
@@ -34,18 +33,27 @@ pipeline {
                     string(credentialsId: 'aws-secret-access-key', variable: 'AWS_SECRET_ACCESS_KEY')
                 ]) {
                     dir(env.TF_DIR) {
-                        sh 'terraform plan -no-color -out=tfplan'
+                        sh '''
+                            terraform plan -no-color \
+                              -var owner_name=${BUILD_USER_ID:-ci} \
+                              -out=tfplan
+                        '''
                     }
                 }
             }
         }
-
         stage('Approval') {
             steps {
-                input message: 'Review the plan above. Apply to AWS?', ok: 'Yes, apply'
+                script {
+                    def go = input(
+                        message: "Apply the plan?",
+                        ok: "Yes, apply",
+                        parameters: [choice(name: 'CONFIRM', choices: ['no','yes'], description: 'Type yes')]
+                    )
+                    if (go != 'yes') { error 'Apply rejected by approver.' }
+                }
             }
         }
-
         stage('Apply') {
             steps {
                 withCredentials([
@@ -62,7 +70,8 @@ pipeline {
     }
 
     post {
-        success { echo "Pipeline succeeded — S3 bucket created" }
-        failure { echo "Pipeline failed — check the stage above" }
+        success { echo "Pipeline succeeded — applied on ${env.BUILD_TIMESTAMP}" }
+        failure { echo "Pipeline failed — review the failing stage" }
+        always  { echo "Duration: ${currentBuild.durationString}" }
     }
 }
