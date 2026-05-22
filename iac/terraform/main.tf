@@ -12,15 +12,15 @@ provider "aws" {
 }
 
 resource "aws_s3_bucket" "demo" {
-  bucket = "ben-bucket"
+  bucket = "ben-bucket28"
 
   tags = {
-    Name    = "ben-bucket"
+    Name    = "ben-bucket28"
     Owner   = var.owner_name
     Email   = var.owner_email
   }
 }
 
 output "bucket_name" {
-  value = aws_s3_bucket.demo.bucket
+  value = "ben-bucket28"
 }
