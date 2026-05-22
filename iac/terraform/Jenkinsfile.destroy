@@ -1,0 +1,59 @@
+pipeline {
+    agent { label 'terraform' }
+
+    options {
+        timeout(time: 30, unit: 'MINUTES')
+        timestamps()
+        ansiColor('xterm')
+    }
+
+    environment {
+        TF_DIR = 'iac/terraform'
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+                sh 'terraform version'
+            }
+        }
+        stage('Init') {
+            steps {
+                dir(env.TF_DIR) {
+                    sh 'terraform init -no-color'
+                }
+            }
+        }
+        stage('Approval') {
+            steps {
+                script {
+                    def go = input(
+                        message: "Destroy ALL resources in this workspace?",
+                        ok: "Yes, destroy",
+                        parameters: [choice(name: 'CONFIRM', choices: ['no','yes'], description: 'Type yes')]
+                    )
+                    if (go != 'yes') { error 'Destroy cancelled by approver.' }
+                }
+            }
+        }
+        stage('Destroy') {
+            steps {
+                withCredentials([
+                    string(credentialsId: 'aws-access-key-id',     variable: 'AWS_ACCESS_KEY_ID'),
+                    string(credentialsId: 'aws-secret-access-key', variable: 'AWS_SECRET_ACCESS_KEY')
+                ]) {
+                    dir(env.TF_DIR) {
+                        sh 'terraform destroy -auto-approve -no-color'
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        success { echo "Destroy succeeded — all resources removed" }
+        failure { echo "Destroy failed — check AWS Console for orphaned resources" }
+        always  { echo "Duration: ${currentBuild.durationString}" }
+    }
+}
