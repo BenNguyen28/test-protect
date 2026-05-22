@@ -5,7 +5,7 @@ variable "aws_region" {
 
 variable "owner_name" {
   type    = string
-  default = "luan-nt"
+  default = "luan_nt"
 }
 
 variable "owner_email" {
