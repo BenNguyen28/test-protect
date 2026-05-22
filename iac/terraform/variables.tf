@@ -12,3 +12,8 @@ variable "owner_email" {
   type    = string
   default = "luannguyen.devops@gmail.com"
 }
+
+variable "instance_type" {
+  type    = string
+  default = "t3.micro"
+}
